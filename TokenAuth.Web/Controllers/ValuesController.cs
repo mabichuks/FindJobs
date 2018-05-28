@@ -4,16 +4,24 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using TokenAuth.Web.Models;
+using TokenAuth.Web.Repositories;
 
 namespace TokenAuth.Web.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "ADMIN")]
     public class ValuesController : ApiController
     {
-        // GET api/values
-        public IEnumerable<string> Get()
+        public UserRepository<ApplicationDbContext> Repo { get; }
+
+        public ValuesController()
         {
-            return new string[] { "value1", "value2" };
+            this.Repo = new UserRepository<ApplicationDbContext>();
+        }
+       
+        public IEnumerable<ApplicationUser> Get()
+        {
+            return Repo.GetUsers();
         }
 
         // GET api/values/5

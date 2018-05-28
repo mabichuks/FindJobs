@@ -17,6 +17,7 @@ namespace TokenAuth.Web
     {
         public static OAuthAuthorizationServerOptions OAuthOptions { get; private set; }
 
+        public static Func<RoleManager<IdentityRole, string>> UserRoleFactory { get; private set; } = CreateRole;
         public static string PublicClientId { get; private set; }
 
         // For more information on configuring authentication, please visit https://go.microsoft.com/fwlink/?LinkId=301864
@@ -64,6 +65,17 @@ namespace TokenAuth.Web
             //    ClientId = "",
             //    ClientSecret = ""
             //});
+
+
+        }
+
+        public static RoleManager<IdentityRole, string> CreateRole()
+        {
+            var dbContext = new ApplicationDbContext();
+            var store = new RoleStore<IdentityRole, string, IdentityUserRole>(dbContext);
+            var rolemanager = new RoleManager<IdentityRole, string>(store);
+
+            return rolemanager;
         }
     }
 }

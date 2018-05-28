@@ -1,0 +1,116 @@
+﻿<html lang="en">
+<head>
+    <link href="Content/bootstrap.css" rel="stylesheet" />
+    <title>Login</title>
+</head>
+<body style="padding-top: 45px">
+    <div class="container">
+        <div class="row">
+            <div class="panel panel-default">
+                <div class="panel-heading clearfix">
+                </div>
+                <div class="panel-body">
+                    <form role="form" class="form-horizontal" id="loginForm" method="post">
+                        <div class="form-group">
+                            <label class="col-sm-2" for="inputTo">Email</label>
+                            <div class="col-sm-10"><input type="email" class="form-control" name="email" id="email" placeholder="enter email address"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2" for="inputSubject">Password</label>
+                            <div class="col-sm-10"><input type="password" class="form-control" name="password" id="password" placeholder="password"></div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-10">
+                                <button type="submit" class="btn btn-primary">Login</button>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="row">
+                        <div class="col-sm-10">
+                            <input type="button" id="btnRegister" value="Register" class="btn btn-success" />
+                        </div>
+                        <div class="col-lg-offset-6">
+                            <img src="Content/img/ajax-loader.gif" id="loading" style="display:none" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="error" class="alert alert-danger collapse">
+        <a id="close" href="#" class="close">
+            &times;
+        </a>
+        <div id="errorText"></div>
+    </div>
+    <script src="Scripts/bootstrap.js"></script>
+    <script src="Scripts/jquery-1.10.2.js"></script>
+    <script src="Scripts/jquery.validate.js"></script>
+    <script type="text/javascript">
+
+        $(function () {
+            $('#close').click(
+                function () {
+
+                    $('#error').hide('fade');
+                }
+            );
+
+            $('#btnRegister').click(
+                function () {
+
+                    window.location.href = "register.html";
+                }
+            );
+
+            $("#loginForm").validate({
+                rules: {
+                    email: {
+                        required: true
+                    },
+                    password: {
+                        required: true
+                    },
+                }
+            })
+
+            $("#loginForm").bind("submit", function (e) {
+                e.preventDefault(false);
+                if (!$(e.target).valid()) {
+                    return;
+                }
+
+                $.ajaxSetup({
+                    beforeSend: function () {
+                        $('#loading').show();
+                    },
+                    complete: function () {
+                        $('#loading').hide();
+                    }
+                });
+
+                $.ajax({
+                    url: "/token",
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    data: {
+                        username: $("#email").val(),
+                        password: $('#password').val(),
+                        grant_type: 'password'
+                    },
+                    success: function (response) {
+                        localStorage.setItem('access_token', response.access_token);
+                        localStorage.setItem('userName', response.userName);
+                        window.location.href = "index.html";
+                    },
+
+                    error: function (e) {
+                        $('#errorText').text(e.responseText);
+                        $('#error').show('fade');
+                    }
+                })
+            })
+        })
+    </script>
+</body>
+</html>

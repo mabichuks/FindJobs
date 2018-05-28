@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -13,6 +14,7 @@ using Microsoft.AspNet.Identity.Owin;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OAuth;
+using TokenAuth.Web.Messaging;
 using TokenAuth.Web.Models;
 using TokenAuth.Web.Providers;
 using TokenAuth.Web.Results;
@@ -323,14 +325,34 @@ namespace TokenAuth.Web.Controllers
         [Route("Register")]
         public async Task<IHttpActionResult> Register(RegisterBindingModel model)
         {
+            var userRole = Startup.UserRoleFactory.Invoke();
+            string role = "ADMIN";
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var user = new ApplicationUser() { UserName = model.Email, Email = model.Email };
+            var user = new ApplicationUser() { UserName = model.Email, Email = model.Email, PhoneNumber=model.PhoneNumber };
 
             IdentityResult result = await UserManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded) { await EmailSender(model); }
+            else return GetErrorResult(result);
+
+
+            if (!userRole.RoleExists(role))
+            {
+                var irole = new IdentityRole() { Name = role };
+                userRole.Create(irole);
+            }
+
+            bool x = await UserManager.IsInRoleAsync(user.Id, role);
+
+            if (!x && model.Email == "admin@findjobs.com")
+            {
+                IdentityResult roleResult = await UserManager.AddToRoleAsync(user.Id, role);
+            }
+
 
             if (!result.Succeeded)
             {
@@ -338,6 +360,23 @@ namespace TokenAuth.Web.Controllers
             }
 
             return Ok();
+        }
+
+        private static async Task EmailSender(RegisterBindingModel model)
+        {
+            string key = ConfigurationManager.AppSettings["Key.Sendgrid"];
+            EmailService messageSvc = new EmailService(key);
+
+            string htmlBody = $@"<h3>Welcome to Job Seeker Webpage</h3>
+                                    <p>The following are your credentials: keep it safe</p>
+                                 <ul> 
+                                <li>Email: {model.Email}</li>
+                                <li>Phone Number: {model.PhoneNumber}</li>
+                            </ul>";
+
+            EmailMessage msg = EmailMessage.CreateMessage(model.Email, "Registeration Successful", htmlBody);
+
+            await messageSvc.SendMail(msg, true);
         }
 
         // POST api/Account/RegisterExternal
